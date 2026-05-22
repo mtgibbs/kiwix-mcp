@@ -25,6 +25,22 @@ export function publicUrl(p: string): string {
   return `${KIWIX_PUBLIC_URL}${contentRelPath(p)}`;
 }
 
+// Recursively pull readable text out of an XML-parsed value. kiwix-serve's RSS
+// <description> often parses into an object (highlighted <b> terms + #text), and
+// String(obj) yields the useless "[object Object]". This flattens it to text.
+export function xmlText(v: unknown): string {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  if (Array.isArray(v)) return v.map(xmlText).join(' ');
+  if (typeof v === 'object') {
+    return Object.entries(v as Record<string, unknown>)
+      .filter(([k]) => !k.startsWith('@_')) // skip attributes
+      .map(([, val]) => xmlText(val))
+      .join(' ');
+  }
+  return '';
+}
+
 // PUBLIC reader link. kiwix-serve serves the raw article at /content/<book>/<path>
 // and the friendly reader UI at /viewer#<book>/<path> — we hand out the viewer
 // form on the PUBLIC host, e.g.
@@ -176,7 +192,7 @@ export async function search(
       url,
       contentPath: m ? m[1]! : '',
       zimTitle: String(it.book?.title ?? ''),
-      snippet: String(it.description ?? '').replace(/\s+/g, ' ').trim().slice(0, 400),
+      snippet: xmlText(it.description).replace(/\s+/g, ' ').trim().slice(0, 400),
       wordCount: it.wordCount ? Number(it.wordCount) : undefined,
     };
   });
