@@ -8,6 +8,20 @@ import TurndownService from 'turndown';
 const KIWIX_BASE = process.env.KIWIX_BASE_URL || 'https://kiwix.lab.mtgibbs.dev';
 const CATALOG_REFRESH_MS = 60 * 60 * 1000; // 1 hour
 
+// Build the kid-facing reader link for an article from its /content/ path.
+// kiwix-serve serves the raw article at /content/<book>/<path> and the friendly
+// reader UI at /viewer#<book>/<path> — we hand out the viewer form so clicking a
+// link lands in a navigable page, e.g.
+//   https://kiwix.lab.mtgibbs.dev/viewer#wikipedia_en_all_nopic_2026-03/Cinematography
+// Accepts a relative ("/content/<book>/<path>") or absolute content URL. The
+// <book> segment carries its own date, so callers never guess it.
+export function viewerUrl(contentPath: string): string {
+  const abs = contentPath.startsWith('http')
+    ? contentPath
+    : `${KIWIX_BASE}${contentPath.startsWith('/') ? '' : '/'}${contentPath}`;
+  return abs.replace('/content/', '/viewer#');
+}
+
 const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
 const turndown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
 // Strip nav/footer noise that adds tokens without information.

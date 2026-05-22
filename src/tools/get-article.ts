@@ -1,5 +1,5 @@
 import type { Tool } from './index.js';
-import { getArticle as fetchArticle } from '../kiwix-client.js';
+import { getArticle as fetchArticle, viewerUrl } from '../kiwix-client.js';
 
 export const getArticle: Tool = {
   name: 'kiwix_get_article',
@@ -33,6 +33,8 @@ export const getArticle: Tool = {
     return {
       title: article.title,
       source_url: article.sourceUrl,
+      // Friendly reader link — hand this to the user verbatim.
+      url: viewerUrl(article.sourceUrl),
       char_count: article.markdown.length,
       truncated,
       markdown: truncated ? article.markdown.slice(0, maxChars) + '\n\n[...truncated]' : article.markdown,

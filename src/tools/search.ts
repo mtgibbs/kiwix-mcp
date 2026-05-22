@@ -1,5 +1,5 @@
 import type { Tool } from './index.js';
-import { search, resolveContentPath } from '../kiwix-client.js';
+import { search, resolveContentPath, viewerUrl } from '../kiwix-client.js';
 
 export const searchKiwix: Tool = {
   name: 'kiwix_search',
@@ -33,6 +33,8 @@ export const searchKiwix: Tool = {
         from_zim: r.zimTitle,
         zim_content_path: r.contentPath,
         article_path: r.url.replace(/^\/content\/[^/]+\//, ''),
+        // Finished, clickable reader link — hand this to the user verbatim.
+        url: viewerUrl(r.url),
         snippet: r.snippet,
         word_count: r.wordCount,
       })),
