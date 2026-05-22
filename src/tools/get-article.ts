@@ -1,5 +1,5 @@
 import type { Tool } from './index.js';
-import { getArticle as fetchArticle, viewerUrl } from '../kiwix-client.js';
+import { getArticle as fetchArticle, viewerUrl, publicUrl } from '../kiwix-client.js';
 
 export const getArticle: Tool = {
   name: 'kiwix_get_article',
@@ -32,7 +32,8 @@ export const getArticle: Tool = {
     const truncated = article.markdown.length > maxChars;
     return {
       title: article.title,
-      source_url: article.sourceUrl,
+      // Public, browser-reachable URLs (the fetch host may be internal cluster DNS).
+      source_url: publicUrl(article.sourceUrl),
       // Friendly reader link — hand this to the user verbatim.
       url: viewerUrl(article.sourceUrl),
       char_count: article.markdown.length,

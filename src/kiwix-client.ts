@@ -5,21 +5,33 @@
 import { XMLParser } from 'fast-xml-parser';
 import TurndownService from 'turndown';
 
+// Internal base used to FETCH article content server-side (in-cluster DNS in
+// prod — no public round-trip). NOT browser-reachable for end users.
 const KIWIX_BASE = process.env.KIWIX_BASE_URL || 'https://kiwix.lab.mtgibbs.dev';
+// PUBLIC base for links we hand to humans (kids click these). Must be the
+// LAN/ingress address, NOT the internal fetch host. Defaults to the ingress.
+const KIWIX_PUBLIC_URL = process.env.KIWIX_PUBLIC_URL || 'https://kiwix.lab.mtgibbs.dev';
 const CATALOG_REFRESH_MS = 60 * 60 * 1000; // 1 hour
 
-// Build the kid-facing reader link for an article from its /content/ path.
-// kiwix-serve serves the raw article at /content/<book>/<path> and the friendly
-// reader UI at /viewer#<book>/<path> — we hand out the viewer form so clicking a
-// link lands in a navigable page, e.g.
+// Reduce any content reference (relative "/content/<book>/<path>" or an absolute
+// URL against the internal fetch host) to just its "/content/..." path.
+function contentRelPath(p: string): string {
+  const m = p.match(/\/content\/.+$/);
+  return m ? m[0] : p.startsWith('/') ? p : `/${p}`;
+}
+
+// PUBLIC raw-article URL (browser-reachable), regardless of the internal fetch host.
+export function publicUrl(p: string): string {
+  return `${KIWIX_PUBLIC_URL}${contentRelPath(p)}`;
+}
+
+// PUBLIC reader link. kiwix-serve serves the raw article at /content/<book>/<path>
+// and the friendly reader UI at /viewer#<book>/<path> — we hand out the viewer
+// form on the PUBLIC host, e.g.
 //   https://kiwix.lab.mtgibbs.dev/viewer#wikipedia_en_all_nopic_2026-03/Cinematography
-// Accepts a relative ("/content/<book>/<path>") or absolute content URL. The
-// <book> segment carries its own date, so callers never guess it.
-export function viewerUrl(contentPath: string): string {
-  const abs = contentPath.startsWith('http')
-    ? contentPath
-    : `${KIWIX_BASE}${contentPath.startsWith('/') ? '' : '/'}${contentPath}`;
-  return abs.replace('/content/', '/viewer#');
+// The <book> segment carries its own date, so callers never guess it.
+export function viewerUrl(p: string): string {
+  return publicUrl(p).replace('/content/', '/viewer#');
 }
 
 const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
